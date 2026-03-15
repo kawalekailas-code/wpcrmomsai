@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Ultimate WhatsApp SaaS CRM</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h2>Ultimate WhatsApp SaaS CRM</h2>
+
+<h3>Add Contact</h3>
+<input id="name" placeholder="Name">
+<input id="phone" placeholder="Phone">
+<button onclick="addContact()">Add</button>
+
+<h3>Contacts</h3>
+<div id="contacts"></div>
+
+<h3>Chat</h3>
+<div id="chat"></div>
+
+<input id="msg" placeholder="Message">
+<button onclick="send()">Send</button>
+
+<h3>Templates</h3>
+<button onclick="loadTemplates()">Load Templates</button>
+<div id="templates"></div>
+
+<h3>Bulk Campaign</h3>
+<input id="templateName" placeholder="Template name">
+<button onclick="campaign()">Send Campaign</button>
+
+<script src="app.js"></script>
+
+</body>
+</html>
