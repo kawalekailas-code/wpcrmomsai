@@ -1,28 +1,56 @@
-require("dotenv").config()
-const express=require("express")
-const bodyParser=require("body-parser")
-const mongoose=require("mongoose")
-const cors=require("cors")
+import express from "express";
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import http from "http";
+import cors from "cors";
 
-const webhook=require("./routes/webhook")
-const messages=require("./routes/messages")
-const contacts=require("./routes/contacts")
-const campaigns=require("./routes/campaigns")
-const templates=require("./routes/templates")
+import webhook from "./routes/webhook.js";
+import chat from "./routes/chat.js";
+import send from "./routes/send.js";
+import { initSocket } from "./socket/index.js";
 
-mongoose.connect(process.env.MONGO_URL)
+dotenv.config();
 
-const app=express()
-app.use(cors())
-app.use(bodyParser.json())
-app.use(express.static("public"))
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-app.use("/webhook",webhook)
-app.use("/messages",messages)
-app.use("/contacts",contacts)
-app.use("/campaigns",campaigns)
-app.use("/templates",templates)
+// ✅ ROOT ROUTE (important)
+app.get("/", (req, res) => {
+  res.send("Server running 🚀");
+});
 
-app.listen(process.env.PORT||3000,()=>{
-console.log("Ultimate WhatsApp SaaS CRM running")
-})
+// ✅ CREATE SERVER
+const server = http.createServer(app);
+const io = initSocket(server);
+
+// inject socket
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// ✅ Mongo connect (safe)
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("Mongo Connected"))
+  .catch(err => console.log("Mongo Error:", err));
+
+// ✅ Routes safe load
+try {
+  app.use("/webhook", webhook);
+  app.use("/api", chat);
+  app.use("/api/send", send);
+} catch (err) {
+  console.log("Route error:", err);
+}
+
+// ✅ Global error handler
+app.use((err, req, res, next) => {
+  console.log("Error:", err);
+  res.status(500).send("Server Error");
+});
+
+// ✅ START SERVER
+server.listen(process.env.PORT || 3000, () => {
+  console.log("Server running 🚀");
+});
