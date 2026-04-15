@@ -1,26 +1,29 @@
-const router=require("express").Router()
-const Message=require("../models/Message")
+router.post("/", async (req, res) => {
+  try {
+    const msg = req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
-router.get("/",(req,res)=>{
-if(req.query["hub.mode"]==="subscribe" && req.query["hub.verify_token"]===process.env.VERIFY_TOKEN){
-res.send(req.query["hub.challenge"])
-}
-})
+    if (msg) {
+      const phone = msg.from;
+      const text = msg.text?.body || "";
 
-router.post("/",async(req,res)=>{
+      await Message.create({ phone, message: text, direction: "incoming" });
 
-let msg=req.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]
+      let contact = await Contact.findOne({ phone });
+      if (!contact) contact = await Contact.create({ phone });
 
-if(msg){
-await Message.create({
-phone:msg.from,
-text:msg.text?.body,
-direction:"in"
-})
-}
+      contact.lastMessage = text;
+      await contact.save();
 
-res.sendStatus(200)
+      req.io?.to(phone).emit("new_message", {
+        phone,
+        message: text,
+        direction: "incoming"
+      });
+    }
 
-})
-
-module.exports=router
+    res.sendStatus(200);
+  } catch (err) {
+    console.log("Webhook error:", err);
+    res.sendStatus(200); // IMPORTANT
+  }
+});
